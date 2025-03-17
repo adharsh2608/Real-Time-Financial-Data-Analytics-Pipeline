@@ -1,0 +1,2 @@
+ python3 -m debugpy --listen :5678 --wait-for-client producer.py
+  python3 -m debugpy --listen :5679 --wait-for-client consumer.py

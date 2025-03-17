@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'flink-consumer'
+    static_configs:
+      - targets: ['flink-consumer:8000']

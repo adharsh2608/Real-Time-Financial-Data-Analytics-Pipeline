@@ -1,2 +1,1 @@
-# Real-Time Financial Data Analytics Pipeline
- 
+# COMP6231_FINALPROJECT

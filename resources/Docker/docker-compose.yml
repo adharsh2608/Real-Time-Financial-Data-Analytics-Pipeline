@@ -1,0 +1,135 @@
+version: '3.8'
+
+networks:
+  kafka-net:
+    driver: bridge
+
+services:
+  # Zookeeper service
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0  # Use the latest Confluent Zookeeper image
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka-net
+
+  # Kafka service
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0  # Use the latest Confluent Kafka image
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    networks:
+      - kafka-net
+    restart: on-failure
+
+  # Kafka producers (3 producers)
+  kafka-producer-1:
+    build:
+      context: ../..
+      dockerfile: resources/Docker/kafka.dockerfile
+    environment:
+      KAFKA_BROKER: kafka:9092
+      KAFKA_TOPIC: stock_prices
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    ports:
+      - "5678:5678"
+    volumes:
+      - /mnt/c/Users/papaa/Downloads/indian_stocks:/app/data
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/src:/app/src
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/instances:/app/instances
+    restart: on-failure
+
+  kafka-producer-2:
+    build:
+      context: ../..
+      dockerfile: resources/Docker/kafka.dockerfile
+    environment:
+      KAFKA_BROKER: kafka:9092
+      KAFKA_TOPIC: stock_prices
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    ports:
+      - "5680:5678"
+    volumes:
+      - /mnt/c/Users/papaa/Downloads/indian_stocks:/app/data
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/src:/app/src
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/instances:/app/instances
+    restart: on-failure
+
+  kafka-producer-3:
+    build:
+      context: ../..
+      dockerfile: resources/Docker/kafka.dockerfile
+    environment:
+      KAFKA_BROKER: kafka:9092
+      KAFKA_TOPIC: stock_prices
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    ports:
+      - "5682:5678"
+    volumes:
+      - /mnt/c/Users/papaa/Downloads/indian_stocks:/app/data
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/src:/app/src
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/instances:/app/instances
+    restart: on-failure
+
+
+  flink-consumer:
+    build:
+      context: ../..
+      dockerfile: resources/Docker/consumer.dockerfile
+    depends_on:
+      - kafka
+    networks:
+      - kafka-net
+    environment:
+      KAFKA_BROKER: kafka:9092
+      INPUT_TOPIC: stock_prices
+    ports:
+      - "8000:8000"  # Expose Prometheus metrics endpoint
+      - "5679:5679"
+    volumes:
+      - /mnt/c/Users/papaa/Downloads/indian_stocks:/app/data
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/src:/app/src
+      - /mnt/c/Users/papaa/Documents/Projects/COMP6231_FINALPROJECT/instances:/app/instances
+    restart: on-failure
+
+  # Prometheus (for monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - kafka-net
+    restart: on-failure
+
+  # Grafana (for visualization)
+  grafana:
+    image: grafana/grafana:latest
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    networks:
+      - kafka-net
+    restart: on-failure
